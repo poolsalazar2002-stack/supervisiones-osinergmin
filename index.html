@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Supervisión PRICE - Osinergmin</title>
+<style>
+  /* ===========================================
+     RESET Y VARIABLES DE DISEÑO
+     Aquí definimos los colores y medidas que se
+     usan en toda la app, para que sea fácil
+     cambiar el "look" desde un solo lugar.
+     =========================================== */
+  :root {
+    --azul-oscuro: #0B3D5C;      /* color principal, institucional */
+    --azul-medio: #14608F;
+    --naranja: #E8722C;           /* color de acento, para botones importantes */
+    --gris-fondo: #F4F6F8;
+    --gris-borde: #D7DEE3;
+    --texto-principal: #1C2B33;
+    --texto-secundario: #5A6B73;
+    --verde-ok: #2E9E5B;
+    --rojo-error: #C0392B;
+    --blanco: #FFFFFF;
+    --radio: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--gris-fondo);
+    color: var(--texto-principal);
+    padding-bottom: 40px;
+  }
+
+  /* Encabezado superior fijo, con el nombre de la app */
+  header {
+    background: var(--azul-oscuro);
+    color: var(--blanco);
+    padding: 18px 20px;
+    text-align: center;
+  }
+  header h1 {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  header p {
+    font-size: 12px;
+    opacity: 0.85;
+    margin-top: 2px;
+  }
+
+  main {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+
+  /* Cada "tarjeta" agrupa una sección del formulario */
+  .tarjeta {
+    background: var(--blanco);
+    border-radius: var(--radio);
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(11,61,92,0.08);
+  }
+
+  .tarjeta h2 {
+    font-size: 14px;
+    color: var(--azul-medio);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+    font-weight: 700;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    color: var(--texto-secundario);
+    margin-bottom: 5px;
+    margin-top: 12px;
+    font-weight: 500;
+  }
+  label:first-of-type { margin-top: 0; }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  input[type="time"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1.5px solid var(--gris-borde);
+    border-radius: 8px;
+    font-size: 15px;
+    color: var(--texto-principal);
+    background: var(--blanco);
+    -webkit-appearance: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--azul-medio);
+  }
+
+  textarea { min-height: 90px; resize: vertical; }
+
+  /* Campos de solo lectura, que muestran los datos del establecimiento */
+  .campo-auto {
+    background: var(--gris-fondo);
+    border: 1.5px solid var(--gris-borde);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--texto-principal);
+    margin-top: 4px;
+  }
+  .campo-auto .etiqueta {
+    font-size: 11px;
+    color: var(--texto-secundario);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .campo-auto .valor {
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  /* Botón principal, grande, fácil de tocar con el dedo */
+  button {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-buscar {
+    background: var(--azul-medio);
+    color: var(--blanco);
+    margin-top: 10px;
+  }
+  .btn-guardar {
+    background: var(--naranja);
+    color: var(--blanco);
+    margin-top: 8px;
+  }
+  button:active { opacity: 0.85; }
+  button:disabled { opacity: 0.5; }
+
+  /* Mensajes de estado (cargando, error, éxito) */
+  .mensaje {
+    font-size: 13px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-top: 10px;
+    display: none;
+  }
+  .mensaje.mostrar { display: block; }
+  .mensaje.error { background: #FBEAE8; color: var(--rojo-error); }
+  .mensaje.exito { background: #E8F6ED; color: var(--verde-ok); }
+  .mensaje.info { background: #EAF2F7; color: var(--azul-medio); }
+
+  /* El formulario completo empieza oculto hasta encontrar el establecimiento */
+  #zonaFormulario { display: none; }
+
+  .fila-doble {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .switch-si-no {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .switch-si-no button {
+    flex: 1;
+    padding: 12px;
+    border: 1.5px solid var(--gris-borde);
+    background: var(--blanco);
+    color: var(--texto-secundario);
+    border-radius: 8px;
+    font-weight: 600;
+  }
+  .switch-si-no button.activo-si {
+    background: var(--verde-ok);
+    border-color: var(--verde-ok);
+    color: var(--blanco);
+  }
+  .switch-si-no button.activo-no {
+    background: var(--rojo-error);
+    border-color: var(--rojo-error);
+    color: var(--blanco);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Supervisión PRICE</h1>
+  <p>Osinergmin · Registro de campo</p>
+</header>
+
+<main>
+
+  <!-- ============================================
+       TARJETA 1: Buscar establecimiento por código
+       ============================================ -->
+  <div class="tarjeta">
+    <h2>Establecimiento</h2>
+    <label for="inputCodigo">Código Osinergmin</label>
+    <input type="text" id="inputCodigo" placeholder="Ej: 12345" inputmode="numeric">
+    <button class="btn-buscar" id="btnBuscar" onclick="buscarEstablecimiento()">Buscar establecimiento</button>
+
+    <div class="mensaje" id="mensajeBusqueda"></div>
+
+    <!-- Aquí se van a mostrar los datos automáticos, una vez encontrados -->
+    <div id="datosEstablecimiento" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- ============================================
+       TARJETA 2 en adelante: formulario de supervisión
+       Empieza oculta (display:none) hasta que se
+       encuentre el establecimiento.
+       ============================================ -->
+  <div id="zonaFormulario">
+
+    <div class="tarjeta">
+      <h2>Información general</h2>
+      <label for="inputSupervisor">Nombre del supervisor</label>
+      <input type="text" id="inputSupervisor" placeholder="Nombre completo">
+
+      <div class="fila-doble">
+        <div>
+          <label for="inputFecha">Fecha</label>
+          <input type="date" id="inputFecha">
+        </div>
+        <div>
+          <label for="inputHora">Hora</label>
+          <input type="time" id="inputHora">
+        </div>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Cumplimiento PRICE</h2>
+      <label>¿Cumple PRICE?</label>
+      <div class="switch-si-no">
+        <button type="button" id="btnSi" onclick="marcarCumplePrice('SI')">SÍ</button>
+        <button type="button" id="btnNo" onclick="marcarCumplePrice('NO')">NO</button>
+      </div>
+    </div>
+
+    <div class="tarjeta">
+      <h2>Precios (S/ por galón)</h2>
+      <label for="inputPrecioRegular">Gasolina Regular</label>
+      <input type="number" step="0.01" id="inputPrecioRegular" placeholder="0.00">
+
+      <label for="inputPrecioPremium">Gasolina Premium</label>
+      <input type="number" step="0.01" id="inputPrecioPremium" placeholder="0.00">
+
+      <label for="inputPrecioDiesel">Diésel B5-S50</label>
+      <input type="number" step="0.01" id="inputPrecioDiesel" placeholder="0.00">
+
+      <label for="inputPrecioGLP">GLP (10 kg)</label>
+      <input type="number" step="0.01" id="inputPrecioGLP" placeholder="0.00">
+    </div>
+
+    <div class="tarjeta">
+      <h2>Stock (galones)</h2>
+      <label for="inputStockRegular">Gasolina Regular</label>
+      <input type="number" step="0.01" id="inputStockRegular" placeholder="0">
+
+      <label for="inputStockPremium">Gasolina Premium</label>
+      <input type="number" step="0.01" id="inputStockPremium" placeholder="0">
+
+      <label for="inputStockDiesel">Diésel B5-S50</label>
+      <input type="number" step="0.01" id="inputStockDiesel" placeholder="0">
+
+      <label for="inputStockGLP">GLP (balones)</label>
+      <input type="number" step="1" id="inputStockGLP" placeholder="0">
+    </div>
+
+    <div class="tarjeta">
+      <h2>Autonomía (días)</h2>
+      <label for="inputAutRegular">Gasolina Regular</label>
+      <input type="number" step="0.1" id="inputAutRegular" placeholder="0">
+
+      <label for="inputAutPremium">Gasolina Premium</label>
+      <input type="number" step="0.1" id="inputAutPremium" placeholder="0">
+
+      <label for="inputAutDiesel">Diésel B5-S50</label>
+      <input type="number" step="0.1" id="inputAutDiesel" placeholder="0">
+    </div>
+
+    <div class="tarjeta">
+      <h2>Observaciones</h2>
+      <textarea id="inputObservaciones" placeholder="Escribe aquí cualquier observación adicional..."></textarea>
+    </div>
+
+    <button class="btn-guardar" id="btnGuardar" onclick="guardarSupervision()">Guardar supervisión</button>
+    <div class="mensaje" id="mensajeGuardado"></div>
+
+  </div>
+
+</main>
+
+<script>
+  // ==========================================================
+  // CONFIGURACIÓN: URL de tu backend en Google Apps Script.
+  // Es la ÚNICA línea que necesitas modificar si en el futuro
+  // vuelves a publicar el backend y cambia la URL.
+  // ==========================================================
+  const URL_BACKEND = "https://script.google.com/macros/s/AKfycbwbJgIWQR5Cxf4cnKPSZ-TdM-4vEk3xKb9fhthObj3OZA2f7DpIqHC52wcbwbnw8MPA/exec";
+
+  // Esta variable global va a guardar los datos del establecimiento
+  // encontrado, para poder enviarlos junto con el formulario al guardar.
+  let establecimientoActual = null;
+
+  // Esta variable guarda si el supervisor marcó "SI" o "NO" en Cumple PRICE.
+  let cumplePriceSeleccionado = "";
+
+  // ==========================================================
+  // FUNCIÓN: buscar establecimiento por código
+  // Se ejecuta al presionar el botón "Buscar establecimiento"
+  // ==========================================================
+  async function buscarEstablecimiento() {
+    const codigo = document.getElementById("inputCodigo").value.trim();
+    const mensaje = document.getElementById("mensajeBusqueda");
+    const zonaDatos = document.getElementById("datosEstablecimiento");
+    const zonaFormulario = document.getElementById("zonaFormulario");
+
+    // Limpiamos mensajes y formulario anteriores antes de una nueva búsqueda
+    mensaje.className = "mensaje";
+    zonaDatos.innerHTML = "";
+    zonaFormulario.style.display = "none";
+    establecimientoActual = null;
+
+    if (!codigo) {
+      mostrarMensaje(mensaje, "Escribe un código Osinergmin antes de buscar.", "error");
+      return;
+    }
+
+    mostrarMensaje(mensaje, "Buscando establecimiento...", "info");
+
+    try {
+      // Llamamos a doGet de nuestro backend, enviando el código como parámetro.
+      const respuesta = await fetch(`${URL_BACKEND}?codigo=${encodeURIComponent(codigo)}`);
+      const resultado = await respuesta.json();
+
+      if (resultado.encontrado) {
+        // Guardamos el establecimiento encontrado en la variable global
+        establecimientoActual = resultado.datos;
+
+        mostrarMensaje(mensaje, "Establecimiento encontrado.", "exito");
+
+        // Mostramos los datos en pantalla, en modo solo-lectura
+        zonaDatos.innerHTML = `
+          <div class="campo-auto">
+            <div class="etiqueta">Nombre del establecimiento</div>
+            <div class="valor">${establecimientoActual.Nombre_Establecimiento || "-"}</div>
+          </div>
+          <div class="campo-auto" style="margin-top:8px;">
+            <div class="etiqueta">Registro de Hidrocarburos</div>
+            <div class="valor">${establecimientoActual.Registro_Hidrocarburos || "-"}</div>
+          </div>
+          <div class="campo-auto" style="margin-top:8px;">
+            <div class="etiqueta">RUC</div>
+            <div class="valor">${establecimientoActual.RUC || "-"}</div>
+          </div>
+          <div class="campo-auto" style="margin-top:8px;">
+            <div class="etiqueta">Dirección</div>
+            <div class="valor">${establecimientoActual.Direccion || "-"}</div>
+          </div>
+          <div class="campo-auto" style="margin-top:8px;">
+            <div class="etiqueta">Distrito / Provincia / Departamento</div>
+            <div class="valor">${establecimientoActual.Distrito || "-"}, ${establecimientoActual.Provincia || "-"}, ${establecimientoActual.Departamento || "-"}</div>
+          </div>
+        `;
+
+        // Mostramos el formulario completo, ahora que ya sabemos de qué
+        // establecimiento se trata.
+        zonaFormulario.style.display = "block";
+
+        // Ponemos la fecha y hora actuales por defecto, para ahorrarle
+        // el trabajo al supervisor (igual las puede cambiar si quiere).
+        const ahora = new Date();
+        document.getElementById("inputFecha").value = ahora.toISOString().split("T")[0];
+        document.getElementById("inputHora").value = ahora.toTimeString().slice(0,5);
+
+      } else {
+        mostrarMensaje(mensaje, resultado.mensaje || "Código no encontrado.", "error");
+      }
+
+    } catch (error) {
+      // Este error aparece, por ejemplo, si no hay Internet en este momento.
+      mostrarMensaje(mensaje, "No se pudo conectar. Revisa tu Internet e intenta de nuevo.", "error");
+    }
+  }
+
+  // ==========================================================
+  // FUNCIÓN: marcar SI / NO en Cumple PRICE
+  // ==========================================================
+  function marcarCumplePrice(valor) {
+    cumplePriceSeleccionado = valor;
+    document.getElementById("btnSi").className = valor === "SI" ? "activo-si" : "";
+    document.getElementById("btnNo").className = valor === "NO" ? "activo-no" : "";
+  }
+
+  // ==========================================================
+  // FUNCIÓN: guardar la supervisión completa
+  // Se ejecuta al presionar "Guardar supervisión"
+  // ==========================================================
+  async function guardarSupervision() {
+    const mensaje = document.getElementById("mensajeGuardado");
+
+    if (!establecimientoActual) {
+      mostrarMensaje(mensaje, "Primero busca un establecimiento válido.", "error");
+      return;
+    }
+
+    // Armamos el paquete completo: los datos del establecimiento (que ya
+    // teníamos guardados) + los datos que el supervisor llenó en el formulario.
+    const supervision = {
+      Codigo_Osinergmin: establecimientoActual.Codigo_Osinergmin,
+      Nombre_Establecimiento: establecimientoActual.Nombre_Establecimiento,
+      Registro_Hidrocarburos: establecimientoActual.Registro_Hidrocarburos,
+      RUC: establecimientoActual.RUC,
+      Direccion: establecimientoActual.Direccion,
+      Distrito: establecimientoActual.Distrito,
+      Provincia: establecimientoActual.Provincia,
+      Departamento: establecimientoActual.Departamento,
+
+      Nombre_Supervisor: document.getElementById("inputSupervisor").value,
+      Fecha_Supervision: document.getElementById("inputFecha").value,
+      Hora_Supervision: document.getElementById("inputHora").value,
+      Cumple_PRICE: cumplePriceSeleccionado,
+
+      Precio_Gasolina_Regular: document.getElementById("inputPrecioRegular").value,
+      Precio_Gasolina_Premium: document.getElementById("inputPrecioPremium").value,
+      Precio_Diesel_B5S50: document.getElementById("inputPrecioDiesel").value,
+      Precio_GLP_10kg: document.getElementById("inputPrecioGLP").value,
+
+      Stock_Gasolina_Regular: document.getElementById("inputStockRegular").value,
+      Stock_Gasolina_Premium: document.getElementById("inputStockPremium").value,
+      Stock_Diesel_B5S50: document.getElementById("inputStockDiesel").value,
+      Stock_GLP_Balones: document.getElementById("inputStockGLP").value,
+
+      Autonomia_Gasolina_Regular: document.getElementById("inputAutRegular").value,
+      Autonomia_Gasolina_Premium: document.getElementById("inputAutPremium").value,
+      Autonomia_Diesel_B5S50: document.getElementById("inputAutDiesel").value,
+
+      Observaciones: document.getElementById("inputObservaciones").value
+    };
+
+    const boton = document.getElementById("btnGuardar");
+    boton.disabled = true;
+    mostrarMensaje(mensaje, "Guardando...", "info");
+
+    try {
+      // Enviamos los datos a doPost de nuestro backend.
+      // Nota: usamos "text/plain" en vez de "application/json" en el header
+      // a propósito. Es un detalle técnico necesario para que Apps Script
+      // reciba la petición sin bloquearla por seguridad del navegador (CORS).
+      const respuesta = await fetch(URL_BACKEND, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(supervision)
+      });
+      const resultado = await respuesta.json();
+
+      if (resultado.exito) {
+        mostrarMensaje(mensaje, "Supervisión guardada correctamente ✔", "exito");
+        setTimeout(() => location.reload(), 1800); // reinicia la pantalla para la siguiente supervisión
+      } else {
+        mostrarMensaje(mensaje, resultado.error || "No se pudo guardar.", "error");
+        boton.disabled = false;
+      }
+
+    } catch (error) {
+      mostrarMensaje(mensaje, "No se pudo conectar. Los datos NO se guardaron todavía.", "error");
+      boton.disabled = false;
+    }
+  }
+
+  // Función auxiliar para mostrar mensajes de estado con su color correspondiente
+  function mostrarMensaje(elemento, texto, tipo) {
+    elemento.textContent = texto;
+    elemento.className = `mensaje mostrar ${tipo}`;
+  }
+</script>
+
+</body>
+</html>
